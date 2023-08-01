@@ -1,0 +1,72 @@
+//vulnerability scanner v1.2.2
+//finds vulnerabilities and prints them as a summary for easy copy and pase
+if params.len < 2 then exit("Usage: "+program_path.split("/")[-1]+" [ip_address] [port]")
+
+metaxploit = include_lib("/lib/metaxploit.so")
+if not metaxploit then metaxploit = include_lib(current_path + "/metaxploit.so")
+
+c_red = "<color=#ff0000>"
+c_green = "<color=#00ff00>"
+c_blue = "<color=#0000ff>"
+c_grey = "<color=#999999>"
+c_reset = "</color>"
+
+ip = params[0]
+port = params[1].to_int
+
+net_session = metaxploit.net_use(ip, port)
+if not net_session then exit("Error: can't connect to net session")
+metaLib = net_session.dump_lib
+addresses = metaxploit.scan(metaLib)
+
+//print(addresses)
+vulns = []
+
+index = 0
+for address in addresses
+	index = index + 1
+	print(c_green + index + ".")
+	print(ip + " " + port + " " + address + c_reset)
+
+
+
+
+	result = metaxploit.scan_address(metaLib, address)
+	print(result)
+	//print(result.indexOf(">")
+	string_arr = result.split("Unsafe")
+	//print(string_arr)
+	vars = []
+	vars.push(address)
+	for string in string_arr
+		vars.push(string[string.indexOf("<b>")+3:string.indexOf("</b>")])
+	end for
+	vars.remove(1)
+	vulns.push(vars)
+end for
+
+commands = []
+index = 0
+for vuln in vulns
+	address = vuln.pull()
+	for var in vuln
+		index = index + 1
+		command = []
+		command.push(index)
+		command.push(ip)
+		command.push(port)
+		command.push(address)
+		command.push(var)
+		commands.push(command)
+	end for
+end for
+
+
+print("-------------------------------------")
+print(c_green + "			Exploit summary" + c_reset)
+print("-------------------------------------")
+
+for command in commands
+	//print(""+ command.pull() + color_end + " " + command[0]+ " " +command[1]+ " " +command[2]+ " " +command[3])
+	print(command[1] + " " + command[2] + " " + command[3] + " " + command[4])
+end for

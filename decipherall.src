@@ -1,0 +1,31 @@
+//Decipherall v1.0.4
+//Decipher the whole file of passwords
+crypto = include_lib("/lib/crypto.so")
+if not crypto then exit("Error: Missing crypto.so library")
+
+file = get_shell.host_computer.File(params[0])
+if file == null then
+	exit("Error opening file")
+end if
+
+contents = file.get_content.split("\n")
+decipheredContents = ""
+for string in contents
+	parts = string.split(":")
+	print("Deciphering password for username <b>" + parts[0] + "</b>")
+	parts[1] = crypto.decipher(parts[1])
+	print("<b>" +parts[1]+"</b>")
+	decipheredContents = decipheredContents + parts[0] + ":" + parts[1] + "\n"
+end for
+
+print("Operation successfull")
+dFileName = file.name + "deciphered"
+dFilePathSegments = file.path.split("/")
+dFilePathSegments.pop()
+dFilePath = ""
+for segment in dFilePathSegments
+	dFilePath = dFilePath +  segment + "/"
+end for
+
+print(decipheredContents)
+
