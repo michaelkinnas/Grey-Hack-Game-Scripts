@@ -1,5 +1,5 @@
-//Hack v2.0.7
-//Scans for vulnerabilites and makes buffer overflow attacks
+//Libray hack v1.0.5
+//Scans libraries for vulnerabilites and makes buffer overflow attacks
 metaxploit = include_lib("/lib/metaxploit.so")
 if not metaxploit then metaxploit = include_lib(current_path + "/metaxploit.so")
 
@@ -15,9 +15,9 @@ libpath = params[0]
 metaLib = metaxploit.load(libpath)
 addresses = metaxploit.scan(metaLib)
 
-exploitAttack = function(ip, port, address, variable)
+exploitAttack = function(address, variable)
 	print("Attacking...")
-	print(ip + " " + port + " " + address + " " + variable)
+	print(address + " " + variable)
 
 	result = metaLib.overflow(address, variable)
 
@@ -77,6 +77,7 @@ exploitAttack = function(ip, port, address, variable)
 		end if
 	end function
 
+	print("TYPE OF RESULT: " + result)
 	if typeof(result) == "shell" then
 		print("Shell access obtained. Do you want to run terminal?")
 		option = user_input("y/n: ")
@@ -119,7 +120,7 @@ index = 0
 for address in addresses
 	index = index + 1
 	print(c_green + index + ".")
-	print(ip + " " + port + " " + address + c_reset)
+	print(address + c_reset)
 	result = metaxploit.scan_address(metaLib, address)
 	print(result)
 	string_arr = result.split("Unsafe")
@@ -140,8 +141,8 @@ for vuln in vulns
 		index = index + 1
 		command = []
 		command.push(index)
-		command.push(ip)
-		command.push(port)
+		//command.push(ip)
+		//command.push(port)
 		command.push(address)
 		command.push(var)
 		command.push("")
@@ -154,10 +155,10 @@ while true
 	print(c_green + "								Exploits found" + c_reset)
 	print("--------------------------------------------------------------------")
 	for command in commands
-		if not command[5] == "" then
-			print(c_grey + "<b>" + command[0] + ".</b> " + command[1] + " " + command[2] + " " + command[3] + " " + command[4] + " " + command[5] + " " + c_reset)
+		if not command[3] == "" then
+			print(c_grey + "<b>" + command[0] + ".</b> " + command[1] + " " + command[2] + " " + command[3] +c_reset)
 		else
-			print("<b>" + command[0] + ".</b> " + command[1] + " " + command[2] + " " + command[3] + " " + command[4] + " " + command[5])
+			print("<b>" + command[0] + ".</b> " + command[1] + " " + command[2] + " " + command[3])
 		end if
 	end for
 	print("--------------------------------------------------------------------")
@@ -167,8 +168,8 @@ while true
 	if option.to_int < 0 or option.to_int > commands.len then
 		print("You must select a valid option")
 	else
-		type = exploitAttack(ip, port, commands[option.to_int-1][3], commands[option.to_int-1][4])
-		commands[option.to_int-1][5] = type
+		type = exploitAttack(commands[option.to_int-1][1], commands[option.to_int-1][2])
+		commands[option.to_int-1][3] = type
 		user_input("Enter to continue....")
 	end if
 end while

@@ -1,4 +1,4 @@
-//Decipherall v1.0.4
+//Decipherall v1.1.4
 //Decipher the whole file of passwords
 crypto = include_lib("/lib/crypto.so")
 if not crypto then exit("Error: Missing crypto.so library")
@@ -13,9 +13,11 @@ decipheredContents = ""
 for string in contents
 	parts = string.split(":")
 	print("Deciphering password for username <b>" + parts[0] + "</b>")
-	parts[1] = crypto.decipher(parts[1])
-	print("<b>" +parts[1]+"</b>")
-	decipheredContents = decipheredContents + parts[0] + ":" + parts[1] + "\n"
+	if parts[1].len == 32 then
+		parts[1] = crypto.decipher(parts[1])
+		print("<b>" +parts[1]+"</b>")
+		decipheredContents = decipheredContents + parts[0] + ":" + parts[1] + "\n"
+	end if
 end for
 
 print("Operation successfull")
@@ -28,4 +30,3 @@ for segment in dFilePathSegments
 end for
 
 print(decipheredContents)
-

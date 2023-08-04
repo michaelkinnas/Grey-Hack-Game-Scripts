@@ -1,0 +1,17 @@
+//Sanitize filesystem to change owner and group to root and remove all permissions for all users
+print("WARNING THIS SCRIPT WILL REMOVE <b>ALL</b> PERMISSIONS FROM THE FILE STRUCTURE OF THIS COMPUTER")
+opt = user_input("Do you want to proceed? y/n: ")
+if opt == "y" then
+	file = get_shell.host_computer.File("/")
+	if file == null then
+		exit("Error geting root directory")
+	end if
+	file.set_group("root", true)
+	file.set_owner("root", true)
+	file.chmod("o-wrx", true)
+	file.chmod("g-wrx", true)
+	file.chmod("u-wrx", true)
+	print("Operation complete")
+else
+	exit("ABORTED")
+end if

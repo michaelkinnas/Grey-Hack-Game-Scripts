@@ -1,28 +1,29 @@
-//buffer overflow exploit v1.3.0
+//buffer overflow exploit v1.5.0
 //command: xa (exploit attack)
 //make a buffer overflow attack on specified ip port memory adress and variable
-if params.len < 4 then exit("Usage: "+program_path.split("/")[-1]+" [ip_address] [port] [mem address] [variable name]")
+if params.len < 3 then exit("Usage: "+program_path.split("/")[-1]+"[library_path] [mem_address] [variable_name] (opt: lan_ip)")
 
 metaxploit = include_lib("/lib/metaxploit.so")
 if not metaxploit then metaxploit = include_lib(current_path + "/metaxploit.so")
 
-ip = params[0]
-port = params[1].to_int
-address = params[2]
-variable = params[3]
+libpath = params[0]
+address = params[1]
+variable = params[2]
+
+metaLib = metaxploit.load(libpath)
+
+result = ""
+if params.len == 4 then
+	result = metaLib.overflow(address, variable, params[3])
+else
+	result = metaLib.overflow(address, variable)
+end if
 
 c_red = "<color=#ff0000>"
 c_green = "<color=#00ff00>"
 c_blue = "<color=#0000ff>"
 c_grey = "<color=#999999>"
 c_reset = "</color>"
-
-net_session = metaxploit.net_use(ip, port)
-if not net_session then exit(c_red+"Error: can't connect to net session"+c_reset)
-metaLib = net_session.dump_lib
-
-
-result = metaLib.overflow(address, variable)
 
 //in case of password inject vulnerability run exploit again and request user pass
 if result == 0 then
@@ -38,13 +39,33 @@ end if
 
 if not result then exit(c_red+"No result" + c_reset)
 
-//print("Managed exploit " + "" + result + "")
-
 read_passwd_file = function(computer)
 	passwd_file = computer.File("/etc/passwd")
 	print(passwd_file.get_content)
 end function
 
+read_creds = function(computer)
+	homedir = computer.File("/home/")
+	if homedir == null then exit("Error opening file")
+	userdirs = homedir.get_folders
+	credfiles = []
+	for userdir in userdirs
+		userdirfolders = userdir.get_folders
+		for dir in userdirfolders
+			if dir.name == "Config" then
+				creds = dir.get_files
+				for credfile in creds
+					if credfile.name == "Bank.txt" or credfile.name == "Mail.txt" then
+						credfiles.push(credfile)
+					end if
+				end for
+			end if
+		end for
+	end for
+	for file in credfiles
+		print(file.get_content)
+	end for
+end function
 
 change_user_passwd = function(computer)
 	username = user_input("Username: ")
@@ -56,7 +77,6 @@ change_user_passwd = function(computer)
 		print(c_red + res + c_reset)
 	end if
 end function
-
 
 //copied from other scripts
 AccessPasswdFile = function(result)
@@ -70,7 +90,6 @@ AccessPasswdFile = function(result)
 	end for
 end function
 
-
 createUserProcess = function(computer)
 	user = user_input("Username: ")
 	pass = user_input("Password: ")
@@ -81,7 +100,6 @@ createUserProcess = function(computer)
 		print(c_red + res + c_reset)
 	end if
 end function
-
 
 if typeof(result) == "shell" then
 	print("Shell access obtained. Do you want to run terminal?")
@@ -103,14 +121,16 @@ else if typeof(result) == "file" then
 	end for
 else if typeof(result) == "computer" then
 	while true
-		print("1. Read /etc/passwd file")
-		print("2. Change user passwd")
-		print("3. Create user (in testing)")
+		print("1. Print /etc/passwd file")
+		print("2. Print users bank and email credentials")
+		print("3. Change user password")
+		print("4. Create new user")
 		print("0. Exit")
 		option = user_input("Option: ")
 		if option == "0" then exit("Exited")
 		if option == "1" then read_passwd_file(result)
-		if option == "2" then change_user_passwd(result)
-		if option == "3" then createUserProcess(result)
+		if option == "2" then read_creds(result)
+		if option == "3" then change_user_passwd(result)
+		if option == "4" then createUserProcess(result)
 	end while
 end if
