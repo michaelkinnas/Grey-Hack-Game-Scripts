@@ -1,11 +1,8 @@
-//Hack v3.0.1
+//Hack v3.1.1
 //Scans for vulnerabilites and makes buffer overflow attacks on ip and port or library files
 //If used with -t parameter you must provide a memory and variable for a targeted attack
 //If used with the -l parameter you must provide a library file path instead of an ip and a port
 //If used with the -t -l parameters (or -l -t) you must provide a library file path a memory address and a variable for a targeted attack
-
-//if params.len < 2 then exit("<b>Usage: "+program_path.split("/")[-1]+" (opt:-t,-l,--help) [ip_address] [port] (opt:mem_address) (opt:variable)</b>")
-
 metaxploit = include_lib("/lib/metaxploit.so")
 if not metaxploit then metaxploit = include_lib(current_path + "/metaxploit.so")
 
@@ -43,6 +40,7 @@ exploitAttack = function(ip, port, address, variable, metaLib, lanip=null)
 
 	read_passwd_file = function(computer)
 		passwd_file = computer.File("/etc/passwd")
+		if not passwd_file.has_permission("r") then print(c_red + "Can't access file. Not enough permissions" + c_reset)
 		print(passwd_file.get_content)
 	end function
 
@@ -81,7 +79,7 @@ exploitAttack = function(ip, port, address, variable, metaLib, lanip=null)
 		end if
 	end function
 
-	read_creds = function(computer)
+	read_creds = function(computer, cred)
 		homedir = computer.File("/home/")
 		if homedir == null then exit("Error opening file")
 		userdirs = homedir.get_folders
@@ -92,7 +90,7 @@ exploitAttack = function(ip, port, address, variable, metaLib, lanip=null)
 				if dir.name == "Config" then
 					creds = dir.get_files
 					for credfile in creds
-						if credfile.name == "Bank.txt" or credfile.name == "Mail.txt" then
+						if cred == "b" and credfile.name == "Bank.txt" or cred == "m" and credfile.name == "Mail.txt" then
 							credfiles.push(credfile)
 						end if
 					end for
@@ -126,16 +124,18 @@ exploitAttack = function(ip, port, address, variable, metaLib, lanip=null)
 	else if typeof(result) == "computer" then
 		while true
 			print("1. Print /etc/passwd file")
-			print("2. Print users bank and email credentials")
-			print("3. Change user password")
-			print("4. Create new user")
+			print("2. Print users bank credentials")
+			print("3. Print users email credentials")
+			print("4. Change user password")
+			print("5. Create new user")
 			print("0. Exit")
 			option = user_input("Option: ")
 			if option == "0" then return c_green + "COMPUTER" + c_reset
 			if option == "1" then read_passwd_file(result)
-			if option == "2" then read_creds(result)
-			if option == "3" then change_user_passwd(result)
-			if option == "4" then createUserProcess(result)
+			if option == "2" then read_creds(result, "b")
+			if option == "3" then read_creds(result, "m")
+ 			if option == "4" then change_user_passwd(result)
+			if option == "5" then createUserProcess(result)
 		end while
 		return c_green + "COMPUTER" + c_reset
 	end if
@@ -217,6 +217,9 @@ if params[0] == "-help" or params[0] == "-h" then
 	print("<b>If you include an extra parameter at the end of a targeted attack you can use the specific router exploit that targets LAN ips</b>")
 	print("Example: hack -t -l /lib/kernel_router.so 0x7B4E771F eslinenumentsiintl 10.0.5.2")
 else if (params[0] == "-l" and params[1] == "-t") or (params[0] == "-t" and params[1] == "-l") then
+	if params.len < 5 or params.len > 6 then
+		exit("<b>Usage: "+program_path.split("/")[-1]+" -t -l [library_path] [mem_address] [variable] (opt:variable)</b>")
+	end if
 	libpath = params[2]
 	address = params[3]
 	variable = params[4]
@@ -227,7 +230,10 @@ else if (params[0] == "-l" and params[1] == "-t") or (params[0] == "-t" and para
 	else
 		exploitAttack(ip, port, address, variable, metaLib)
 	end if
-else  if params[0] == "-t" then
+else if params[0] == "-t" then
+	if params.len < 5 or params.len > 6 then
+		exit("<b>Usage: "+program_path.split("/")[-1]+" -t [ip_address] [port] [mem_address] [variable] (opt:variable)</b>")
+	end if
 	ip = params[1]
 	port = params[2].to_int
 	address = params[3]
@@ -242,10 +248,16 @@ else  if params[0] == "-t" then
 		exploitAttack(ip, port, address, variable, metaLib)
 	end if
 else if params[0] == "-l" then
+	if params.len != 2 then
+		exit("<b>Usage: "+program_path.split("/")[-1]+" -l [library_path]</b>")
+	end if
 	libpath = params[1]
 	metaLib = metaxploit.load(libpath)
 	scanMode(metaLib.lib_name, metaLib.version, metaLib)
 else
+	if params.len != 2 then
+		exit("<b>Usage: "+program_path.split("/")[-1]+" [ip_address] [port]</b>")
+	end if
 	ip = params[0]
 	port = params[1].to_int
 	net_session = metaxploit.net_use(ip, port)
